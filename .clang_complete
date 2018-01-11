@@ -39,7 +39,7 @@
 -I/home/quetzal/.platformio/packages/framework-arduinoespressif32/cores/esp32
 -I/home/quetzal/.platformio/packages/framework-arduinoespressif32/variants/esp32
 -I/home/quetzal/sailboat-autopilot/src
--I/home/quetzal/.platformio/lib/Adafruit GFX Library_ID13
+-I/home/quetzal/.platformio/lib/SparkFun Micro OLED Breakout_ID366/src
 -I/home/quetzal/.platformio/packages/framework-arduinoespressif32/libraries/ArduinoOTA/src
 -I/home/quetzal/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src
 -I/home/quetzal/.platformio/packages/framework-arduinoespressif32/libraries/EEPROM

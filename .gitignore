@@ -35,3 +35,5 @@
 .piolibdeps
 .clang_complete
 .gcc-flags.json
+
+constantes.h
