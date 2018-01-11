@@ -1,8 +1,13 @@
 #include <WiFi.h>
 #include "constantes.h"
 
+#define MAX_NMEA_LENGHT 90
+
+const int lf = 10;    // Linefeed in ASCII
 const int   watchdog = 5000;        // Fréquence du watchdog - Watchdog frequency
 unsigned long previousMillis = millis();
+
+char* tmpNmeaSentence; // Temp line to check NMEA checksum when line received
 
 void setup() {
   Serial.begin(115200);
@@ -24,8 +29,7 @@ void setup() {
  bool isNMEAChecksumValid(String sentence){
    int checksum = 0;
 
-   char* tmpLine = (char*)malloc((sentence.length()+1)*sizeof(char));
-   char* tmpLine2 = tmpLine;
+   char* tmpLine = tmpNmeaSentence;
    sentence.toCharArray(tmpLine, sentence.length()+1);
 
    tmpLine++;
@@ -38,7 +42,6 @@ void setup() {
 
   int printedChecksum = strtol(tmpLine, NULL, 16);
   tmpLine = NULL;
-  free(tmpLine2);
 
   return printedChecksum == checksum;
  }
@@ -73,11 +76,15 @@ void loop() {
       }
     }
 
+   tmpNmeaSentence = (char*)malloc(MAX_NMEA_LENGHT*sizeof(char));
+
     while(client.available()){
-      String line = client.readStringUntil('\r');
-      Serial.print("Check line " + line);
+      String line = client.readStringUntil(lf);
+      Serial.print("Check line " + line + '\n');
       bool checksum = isNMEAChecksumValid(line);
       Serial.printf("Is checksum valid ? %d\n", checksum);
     }
+    free(tmpNmeaSentence);
+
   }
 }
