@@ -21,22 +21,18 @@ void setup() {
   Serial.println(WiFi.localIP());
 }
 
- bool isChecksumValid(String line){
+ bool isNMEAChecksumValid(String sentence){
    int checksum = 0;
-   Serial.println(line);
 
-   char* tmpLine = (char*)malloc((line.length()+1)*sizeof(char));
+   char* tmpLine = (char*)malloc((sentence.length()+1)*sizeof(char));
    char* tmpLine2 = tmpLine;
-   line.toCharArray(tmpLine, line.length()+1);
-   Serial.printf("tmpline %s\n", tmpLine);
+   sentence.toCharArray(tmpLine, sentence.length()+1);
 
    tmpLine++;
    while (tmpLine[0] != '*') {
      checksum = checksum ^ tmpLine[0];
      tmpLine++;
    }
-
-  Serial.printf("checksum %d\n", checksum);
 
   tmpLine++;
 
@@ -65,8 +61,6 @@ void loop() {
     url += WiFi.localIP().toString();
 
 
-
-    // Envoi la requete au serveur - This will send the request to the server
     client.print(String("GET ") + url + " HTTP/1.1\r\n" +
                "NMEA_HOST: " + NMEA_HOST + "\r\n" +
                "Connection: close\r\n\r\n");
@@ -79,11 +73,10 @@ void loop() {
       }
     }
 
-    // Read all the lines of the reply from server and print them to Serial
     while(client.available()){
       String line = client.readStringUntil('\r');
       Serial.print("Check line " + line);
-      bool checksum = isChecksumValid(line);
+      bool checksum = isNMEAChecksumValid(line);
       Serial.printf("Is checksum valid ? %d\n", checksum);
     }
   }
