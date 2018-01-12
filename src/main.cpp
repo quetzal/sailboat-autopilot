@@ -8,6 +8,9 @@ const int   watchdog = 5000;        // Fréquence du watchdog - Watchdog frequen
 unsigned long previousMillis = millis();
 
 char* tmpNmeaSentence; // Temp line to check NMEA checksum when line received
+WiFiClient client;
+String NMEA_Line;
+String NMEA_Header;
 
 String getValue(String data, char separator, int index)
 {
@@ -29,6 +32,7 @@ void setup() {
   Serial.begin(115200);
   Serial.print("Connexion à ");
   Serial.println(WIFI_SSID);
+  tmpNmeaSentence = (char*)malloc(MAX_NMEA_LENGHT*sizeof(char));
 
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   while (WiFi.status() != WL_CONNECTED) {
@@ -62,12 +66,11 @@ void setup() {
   return printedChecksum == checksum;
  }
 
-void loop() {
+void connectToNmeaSocket() {
   unsigned long currentMillis = millis();
 
   if ( currentMillis - previousMillis > watchdog ) {
     previousMillis = currentMillis;
-    WiFiClient client;
 
     if (!client.connect(NMEA_HOST, NMEA_PORT)) {
       Serial.println("Connexion échoué");
@@ -90,16 +93,20 @@ void loop() {
         return;
       }
     }
+  }
+}
 
-   tmpNmeaSentence = (char*)malloc(MAX_NMEA_LENGHT*sizeof(char));
-   String NMEA_Line; 
 
-    while(client.available()){
+void loop() {
+
+    if(!client.available()){
+      connectToNmeaSocket();
+    } else {
       NMEA_Line = client.readStringUntil(lf);
-      String NMEA_Header = getValue(NMEA_Line, ',', 0).substring(3);
-      bool checksum = isNMEAChecksumValid(NMEA_Line);
+      NMEA_Header = getValue(NMEA_Line, ',', 0).substring(3);
+      if (isNMEAChecksumValid(NMEA_Line)) {
 
-      if (NMEA_Header == "HDT") {
+            if (NMEA_Header == "HDT") {
         float Cap = getValue(NMEA_Line, ',', 1).toFloat();
         Serial.printf("Cap = %.1f °\n", Cap);
       }
@@ -116,7 +123,6 @@ void loop() {
         Serial.print("Time = " + Time.substring(0, 2) + ":" + Time.substring(2, 4) + '\n');
       }
     }
-    free(tmpNmeaSentence);
 
   }
 }
