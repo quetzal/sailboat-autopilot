@@ -92,14 +92,29 @@ void loop() {
     }
 
    tmpNmeaSentence = (char*)malloc(MAX_NMEA_LENGHT*sizeof(char));
+   String NMEA_Line; 
 
     while(client.available()){
-      String line = client.readStringUntil(lf);
-      Serial.print("Check line " + line + '\n');
-      bool checksum = isNMEAChecksumValid(line);
-      Serial.printf("Is checksum valid ? %d\n", checksum);
-      float Cap = getValue(line, ',', 1).toFloat();
-      Serial.printf("Cap = %.1f \n", Cap);
+      NMEA_Line = client.readStringUntil(lf);
+      String NMEA_Header = getValue(NMEA_Line, ',', 0).substring(3);
+      bool checksum = isNMEAChecksumValid(NMEA_Line);
+
+      if (NMEA_Header == "HDT") {
+        float Cap = getValue(NMEA_Line, ',', 1).toFloat();
+        Serial.printf("Cap = %.1f °\n", Cap);
+      }
+      else if (NMEA_Header == "VTG") {
+        float Speed = getValue(NMEA_Line, ',', 7).toFloat();
+        Serial.printf("Speed = %.2f K/H \n", Speed);
+
+      }
+      /*TODO à finir MVM
+      else if (NMEA_Header == "MVM") {
+      }*/
+      else if (NMEA_Header == "RMC") {
+        String Time = getValue(NMEA_Line, ',', 1);
+        Serial.print("Time = " + Time.substring(0, 2) + ":" + Time.substring(2, 4) + '\n');
+      }
     }
     free(tmpNmeaSentence);
 
