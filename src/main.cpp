@@ -6,10 +6,13 @@
 SSD1306  display(0x3c, 5, 4);
 
 #define MAX_NMEA_LENGHT 90
+#define DISPLAY_LINES 3
 
 const int lf = 10;    // Linefeed in ASCII
 const int   watchdog = 5000;        // Fréquence du watchdog - Watchdog frequency
 unsigned long previousMillis = millis();
+
+String displayedData[DISPLAY_LINES];
 
 char* tmpNmeaSentence; // Temp line to check NMEA checksum when line received
 WiFiClient client;
@@ -32,10 +35,14 @@ String getValue(String data, char separator, int index)
   return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
 }
 
-void display_nmea(String s){
+void display_nmea(){
   display.clear();
-  display.setTextAlignment(TEXT_ALIGN_CENTER_BOTH);
-  display.drawString(DISPLAY_WIDTH/2, DISPLAY_HEIGHT/2, s);
+  int display_zones_size = DISPLAY_HEIGHT/DISPLAY_LINES;
+
+  for(int i = 0; i < DISPLAY_LINES; i++){
+    int current_zones = display_zones_size/2 + i*display_zones_size;
+    display.drawString(DISPLAY_WIDTH/2, current_zones, displayedData[i]);
+  }
   display.display();
 }
 
@@ -64,7 +71,8 @@ void setup() {
 
   display.init();
   display.flipScreenVertically();
-
+  display.setTextAlignment(TEXT_ALIGN_CENTER_BOTH);
+  display.setFont(ArialMT_Plain_16);
 }
 
 bool isNMEAChecksumValid(String sentence){
@@ -130,21 +138,21 @@ void loop() {
       if (NMEA_Header == "HDT") {
         float Cap = getValue(NMEA_Line, ',', 1).toFloat();
         Serial.printf("Cap = %.1f °\n", Cap);
-        display_nmea("Cap = " + String(Cap));
+        displayedData[0] = "Cap = " + String(Cap) + "°";
       }
       else if (NMEA_Header == "VTG") {
         float Speed = getValue(NMEA_Line, ',', 7).toFloat();
         Serial.printf("Speed = %.2f K/H \n", Speed);
+        displayedData[1] = "Speed = " + String(Speed) + " K/H";
 
       }
-      /*TODO à finir MVM
-      else if (NMEA_Header == "MVM") {
-    }*/
-    else if (NMEA_Header == "RMC") {
-      String Time = getValue(NMEA_Line, ',', 1);
-      Serial.print("Time = " + Time.substring(0, 2) + ":" + Time.substring(2, 4) + '\n');
+      else if (NMEA_Header == "RMC") {
+        String Time = getValue(NMEA_Line, ',', 1);
+        Serial.print("Time = " + Time.substring(0, 2) + ":" + Time.substring(2, 4) + '\n');
+        displayedData[2] = "Time = " + Time.substring(0, 2) + ":" + Time.substring(2, 4);
+      }
+      display_nmea();
     }
-  }
 
-}
+  }
 }
