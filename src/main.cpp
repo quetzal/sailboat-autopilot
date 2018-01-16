@@ -76,7 +76,7 @@ void setup() {
   display.init();
   display.flipScreenVertically();
   display.setTextAlignment(TEXT_ALIGN_CENTER_BOTH);
-  display.setFont(ArialMT_Plain_16);
+  display.setFont(ArialMT_Plain_10);
 
   Serial.print("Connection to ");
   Serial.println(WIFI_SSID);
