@@ -8,7 +8,7 @@ SSD1306  display(0x3c, 5, 4);
 #define LED_Tourner_droite 15
 #define LED_Tourner_gauche 2
 #define MAX_NMEA_LENGHT 90
-#define DISPLAY_LINES 4
+#define DISPLAY_LINES_NMEA 4
 #define Button_Retained_Cap 16  // digital pin of your button
 #define Button_Target_Cap_More_10 26  // digital pin of your button
 #define Button_Target_Cap_Less_10 25  // digital pin of your button
@@ -27,11 +27,35 @@ WiFiClient client;
 
 String NMEA_Line;
 String NMEA_Header;
-String displayedData[DISPLAY_LINES];
+String displayedData[DISPLAY_LINES_NMEA];
 
 int Target_Cap = 0;
-int Retained_Cap = 0;
 int Current_Cap;
+
+void ConnecteToWiFi() {
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  int i = 0;
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+    if (i++ > 10) {
+      WiFi.reconnect();
+      display.clear();
+      display.drawString(DISPLAY_WIDTH/2, DISPLAY_HEIGHT/2, "WiFi reconnect");
+      display.display();
+      Serial.println(" WiFi reconnect");
+      i = 0;
+    }
+  }
+  Serial.println("");
+  Serial.println("WiFi Connected");
+  display.clear();
+  display.drawString(DISPLAY_WIDTH/2, DISPLAY_HEIGHT/2, "WiFi connected");
+  display.display();
+  delay(1000);
+  Serial.println("IP Adress: ");
+  Serial.println(WiFi.localIP());
+}
 
 String getValue(String data, char separator, int index)
 {
@@ -51,15 +75,14 @@ String getValue(String data, char separator, int index)
 
 void display_nmea(){
   display.clear();
-  int display_zones_size = DISPLAY_HEIGHT/DISPLAY_LINES;
+  int display_zones_size = DISPLAY_HEIGHT/DISPLAY_LINES_NMEA;
 
-  for(int i = 0; i < DISPLAY_LINES; i++){
+  for(int i = 0; i < DISPLAY_LINES_NMEA; i++){
     int current_zones = display_zones_size/2 + i*display_zones_size;
     display.drawString(DISPLAY_WIDTH/2, current_zones, displayedData[i]);
   }
   display.display();
 }
-
 void setup() {
 
   Serial.begin(115200);
@@ -85,30 +108,6 @@ void setup() {
   display.display();
 
   tmpNmeaSentence = (char*)malloc(MAX_NMEA_LENGHT*sizeof(char));
-
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  int i = 0;
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-    if (i++ > 10) {
-      WiFi.reconnect();
-      display.clear();
-      display.drawString(DISPLAY_WIDTH/2, DISPLAY_HEIGHT/2, "WiFi reconnect");
-      display.display();
-      Serial.println(" WiFi reconnect");
-      i = 0;
-    }
-  }
-
-  Serial.println("");
-  Serial.println("WiFi Connected");
-  display.clear();
-  display.drawString(DISPLAY_WIDTH/2, DISPLAY_HEIGHT/2, "WiFi connected");
-  display.display();
-  delay(1000);
-  Serial.println("IP Adress: ");
-  Serial.println(WiFi.localIP());
 }
 
 bool isNMEAChecksumValid(String sentence){
@@ -182,67 +181,59 @@ void keepCap(int capToKeep) {
       digitalWrite(LED_Tourner_gauche, LOW);
       digitalWrite(LED_Tourner_droite, HIGH);
     }
-    if (Target_Cap == 0) {
-      if (digitalRead(Button_Target_Cap_More_10)) {
-        Target_Cap = Retained_Cap + 10;
-      }
-      if (digitalRead(Button_Target_Cap_Less_10)) {
-        Target_Cap = Retained_Cap - 10;
-      }
-    }
-    else {
-      if (digitalRead(Button_Target_Cap_More_10)) {
-        Target_Cap += 10;
-      }
-      if (digitalRead(Button_Target_Cap_Less_10)) {
-        Target_Cap -= 10;
-      }
-
-    }
   }
 }
 
 void loop() {
 
-    if(!client.available()){
-      connectToNmeaSocket();
+  if(!client.available()){
+    if (WiFi.status() != WL_CONNECTED) {
+      ConnecteToWiFi();
     }
-    else {
-      if(digitalRead(Button_Retained_Cap) && Current_Cap != CURRENT_CAP_UNINITIALIZED) {
-        pilotEngaged = true;
-        Target_Cap = Current_Cap;
-      }
-
-      NMEA_Line = client.readStringUntil(lf);
-      NMEA_Header = getValue(NMEA_Line, ',', 0).substring(3);
-      if (isNMEAChecksumValid(NMEA_Line)) {
-
-        if (NMEA_Header == "HDT") {
-          Current_Cap = getValue(NMEA_Line, ',', 1).toInt();
-          Serial.printf("Cap = %d °\n", Current_Cap);
-          displayedData[0] = "Cap = " + String(Current_Cap) + "°";
-          if (pilotEngaged) {
-            keepCap(Current_Cap);
-            displayedData[1] = "T_Cap = " + String(computeTrueTargetCap(Target_Cap)) + "°";
-          }
-          else {
-            displayedData[1] = "Pilot is OFF";
-          }
-        }
-
-        else if (NMEA_Header == "VTG") {
-          float Speed = getValue(NMEA_Line, ',', 7).toFloat();
-          Serial.printf("Speed = %.2f K/H \n", Speed);
-          displayedData[2] = "Speed = " + String(Speed) + " K/H";
-
-        }
-        else if (NMEA_Header == "RMC") {
-          String Time = getValue(NMEA_Line, ',', 1);
-          Serial.print("Time = " + Time.substring(0, 2) + ":" + Time.substring(2, 4) + '\n');
-          displayedData[3] = "Time = " + Time.substring(0, 2) + ":" + Time.substring(2, 4);
-        }
-        display_nmea();
-      }
-    }
-
+    connectToNmeaSocket();
   }
+  else {
+    if(digitalRead(Button_Retained_Cap) && Current_Cap != CURRENT_CAP_UNINITIALIZED) {
+      pilotEngaged = true;
+      Target_Cap = Current_Cap;
+    }
+    if (digitalRead(Button_Target_Cap_More_10)) {
+      Target_Cap += 10;
+    }
+    if (digitalRead(Button_Target_Cap_Less_10)) {
+      Target_Cap -= 10;
+    }
+
+    NMEA_Line = client.readStringUntil(lf);
+    NMEA_Header = getValue(NMEA_Line, ',', 0).substring(3);
+    if (isNMEAChecksumValid(NMEA_Line)) {
+
+      if (NMEA_Header == "HDT") {
+        Current_Cap = getValue(NMEA_Line, ',', 1).toInt();
+        Serial.printf("Cap = %d °\n", Current_Cap);
+        displayedData[0] = "Cap = " + String(Current_Cap) + "°";
+        if (pilotEngaged) {
+          keepCap(Current_Cap);
+          displayedData[1] = "T_Cap = " + String(computeTrueTargetCap(Target_Cap)) + "°";
+        }
+        else {
+          displayedData[1] = "Pilot is OFF";
+        }
+      }
+
+      else if (NMEA_Header == "VTG") {
+        float Speed = getValue(NMEA_Line, ',', 7).toFloat();
+        Serial.printf("Speed = %.2f K/H \n", Speed);
+        displayedData[2] = "Speed = " + String(Speed) + " K/H";
+
+      }
+      else if (NMEA_Header == "RMC") {
+        String Time = getValue(NMEA_Line, ',', 1);
+        Serial.print("Time = " + Time.substring(0, 2) + ":" + Time.substring(2, 4) + '\n');
+        displayedData[3] = "Time = " + Time.substring(0, 2) + ":" + Time.substring(2, 4);
+      }
+      display_nmea();
+
+    }
+  }
+}
