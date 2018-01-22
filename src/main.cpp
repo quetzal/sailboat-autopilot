@@ -12,11 +12,11 @@ String Nmea_display[DISPLAY_LINES_NMEA];
 
 const int lf = 10;  // Linefeed in ASCII
 
-const double Available_Ram_Length = (Electric_Ram_Length - Avoid_Stop_Electric_Ram)/2; //Available ram length in centimeters
-
 bool pilotEngaged;
 bool Button_Target_Cap_More_10_Pressed = false;
 bool Button_Target_Cap_Less_10_Pressed = false;
+
+const double Available_Ram_Length = (Electric_Ram_Length - Avoid_Stop_Electric_Ram)/2; //Available ram length in centimeters
 
 double Target_Cap = 0;
 double Current_Cap;
@@ -52,6 +52,21 @@ void keepCap(int capToKeep) {
   }
 }
 
+void Retained_Cap_Pressed() {
+  if(Current_Cap != CURRENT_CAP_UNINITIALIZED) {
+    pilotEngaged = true;
+    Target_Cap = Current_Cap;
+  }
+}
+
+void Target_Cap_More_10_Pressed() {
+  Target_Cap += 10;
+}
+
+void Target_Cap_Less_10_Pressed() {
+  Target_Cap -= 10;
+}
+
 void setup() {
 
   Serial.begin(115200);
@@ -62,18 +77,21 @@ void setup() {
   pilotEngaged = false;
   Current_Cap = CURRENT_CAP_UNINITIALIZED;
 
-  pinMode(Button_Retained_Cap, INPUT);
-  pinMode(Button_Target_Cap_More_10, INPUT);
-  pinMode(Button_Target_Cap_Less_10, INPUT);
+  pinMode(Button_Retained_Cap, INPUT_PULLDOWN);
+  pinMode(Button_Target_Cap_More_10, INPUT_PULLDOWN);
+  pinMode(Button_Target_Cap_Less_10, INPUT_PULLDOWN);
+
+  attachInterrupt(digitalPinToInterrupt(Button_Retained_Cap), Retained_Cap_Pressed, RISING);
+  attachInterrupt(digitalPinToInterrupt(Button_Target_Cap_More_10), Target_Cap_More_10_Pressed, RISING);
+  attachInterrupt(digitalPinToInterrupt(Button_Target_Cap_Less_10), Target_Cap_Less_10_Pressed, RISING);
 
   String textTmp[2];
   textTmp[0] = "Connection to";
   textTmp[1] = (WIFI_SSID);
   initDisplay();
   display_text(textTmp, 2);
-  
-  initNMEA();
 
+  initNMEA();
 }
 
 void loop() {
@@ -90,27 +108,6 @@ void loop() {
     ConnectToNmeaSocket(NMEA_HOST, NMEA_PORT);
   }
   else {
-    if(digitalRead(Button_Retained_Cap) && Current_Cap != CURRENT_CAP_UNINITIALIZED) {
-      pilotEngaged = true;
-      Target_Cap = Current_Cap;
-
-    }
-    if (digitalRead(Button_Target_Cap_More_10) && !Button_Target_Cap_More_10_Pressed) {
-      Target_Cap += 10;
-      Button_Target_Cap_More_10_Pressed = true;
-    }
-    else if (!digitalRead(Button_Target_Cap_More_10) && Button_Target_Cap_More_10_Pressed) {
-      Button_Target_Cap_More_10_Pressed = false;
-    }
-    if (digitalRead(Button_Target_Cap_Less_10) && !Button_Target_Cap_Less_10_Pressed) {
-      Target_Cap -= 10;
-      Button_Target_Cap_Less_10_Pressed = true;
-    }
-    else if (!digitalRead(Button_Target_Cap_Less_10) && Button_Target_Cap_Less_10_Pressed) {
-
-      Button_Target_Cap_Less_10_Pressed = false;
-    }
-
     NMEA_Line = getClient().readStringUntil(lf);
     NMEA_Header = getValue(NMEA_Line, ',', 0).substring(3);
     if (isNMEAChecksumValid(NMEA_Line)) {
@@ -128,23 +125,19 @@ void loop() {
           myPID.Compute();
           Serial.print(String(Output) + "\n");
         }
-
         else {
           Nmea_display[1] = "Pilot is OFF";
         }
       }
-
       else if (NMEA_Header == "VTG") {
         float Speed = getValue(NMEA_Line, ',', 7).toFloat();
         Nmea_display[2] = "Speed = " + String(Speed) + "K/H";
-
       }
       else if (NMEA_Header == "RMC") {
         String Time = getValue(NMEA_Line, ',', 1);
         Nmea_display[3] = "Time = " + Time.substring(0, 2) + ":" + Time.substring(2, 4);
       }
       display_text(Nmea_display, DISPLAY_LINES_NMEA);
-
     }
   }
 }
