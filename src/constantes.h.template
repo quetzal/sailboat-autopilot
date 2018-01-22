@@ -1,4 +1,0 @@
-#define WIFI_SSID "SSID_De_Votre_WiFi"
-#define WIFI_PASSWORD  "Mot_De_Passe_De_Votre_WiFi"
-#define NMEA_HOST  "Port_De_Votre_Serveur_NMEA"
-#define NMEA_PORT Port_De_Votre_Serveur_NMEA

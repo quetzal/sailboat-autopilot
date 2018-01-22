@@ -1,0 +1,4 @@
+#define WIFI_SSID "SSID_WiFi"
+#define WIFI_PASSWORD  "Password_WiFi"
+#define NMEA_HOST  "Serveur_NMEA_IP"
+#define NMEA_PORT 12345 //Server_NMEA_Port
