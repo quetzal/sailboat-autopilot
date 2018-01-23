@@ -1,4 +1,3 @@
-
 #include <SSD1306.h> //https://github.com/squix78/esp8266-oled-ssd1306
 #include <PID_v1.h>
 #include <Define.h>
@@ -110,7 +109,7 @@ void loop() {
     NMEA_Header = getValue(NMEA_Line, ',', 0).substring(3);
     if (isNMEAChecksumValid(NMEA_Line)) {
 
-      if (NMEA_Header == "HDT") {
+      if (NMEA_Header == "HDG") {
         Current_Cap = getValue(NMEA_Line, ',', 1).toInt();
         Nmea_display[0] = "Cap = " + String(Current_Cap) + "°";
 
