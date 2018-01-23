@@ -3,4 +3,6 @@
 void ConnecteToWiFi(char* ssid, char* password );
 void ConnectToNmeaSocket(char* nmea_host, int nmea_port);
 
-WiFiClient getClient();
+bool isWifiConnected();
+bool nmeaConnected();
+String readNmeaLine();

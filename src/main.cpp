@@ -1,4 +1,4 @@
-#include <WiFi.h>
+
 #include <SSD1306.h> //https://github.com/squix78/esp8266-oled-ssd1306
 #include <PID_v1.h>
 #include <Define.h>
@@ -9,8 +9,6 @@
 #include <Auto_Pilot.h>
 
 String Nmea_display[DISPLAY_LINES_NMEA];
-
-const int lf = 10;  // Linefeed in ASCII
 
 bool pilotEngaged;
 bool Button_Target_Cap_More_10_Pressed = false;
@@ -96,8 +94,8 @@ void setup() {
 
 void loop() {
 
-  if(!getClient().available()){
-    if (WiFi.status() != WL_CONNECTED) {
+  if(!nmeaConnected()){
+    if (!isWifiConnected()) {
       ConnecteToWiFi(WIFI_SSID, WIFI_PASSWORD);
       String wifi_display[3];
       wifi_display[0] = "WiFi connected";
@@ -108,7 +106,7 @@ void loop() {
     ConnectToNmeaSocket(NMEA_HOST, NMEA_PORT);
   }
   else {
-    NMEA_Line = getClient().readStringUntil(lf);
+    NMEA_Line = readNmeaLine();
     NMEA_Header = getValue(NMEA_Line, ',', 0).substring(3);
     if (isNMEAChecksumValid(NMEA_Line)) {
 

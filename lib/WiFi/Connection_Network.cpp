@@ -1,4 +1,5 @@
 #include <WiFi.h>
+const int lf = 10;  // Linefeed in ASCII
 
 const int watchdog = 5000;  // Fréquence du watchdog - Watchdog frequency
 
@@ -6,8 +7,16 @@ unsigned long previousMillis = millis();
 
 WiFiClient client;
 
-WiFiClient getClient(){
-  return client;
+bool nmeaConnected(){
+  return client.available();
+}
+
+String readNmeaLine(){
+  return client.readStringUntil(lf);
+}
+
+bool isWifiConnected(){
+  return WiFi.status() == WL_CONNECTED;
 }
 
 IPAddress GetIp() {

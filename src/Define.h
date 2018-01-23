@@ -4,8 +4,8 @@
 #define Accepted_Cap_Error 5 // error in ° accepted by the autopilot
 
 #define Button_Retained_Cap 16  // digital pin of your button
-#define Button_Target_Cap_More_10 5 // digital pin of your button
-#define Button_Target_Cap_Less_10 4  // digital pin of your button
+#define Button_Target_Cap_More_10 2 // digital pin of your button
+#define Button_Target_Cap_Less_10 14  // digital pin of your button
 
 #define Electric_Ram_Length 40 // length max of the electric ram in centimeter
 #define Avoid_Stop_Electric_Ram 10 // length to avoid the stop of the electric ram in centimeter
